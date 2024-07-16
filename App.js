@@ -1,282 +1,178 @@
-// https://learn.newtonschool.co/n/vca0ptbqtaql/preview
-
-let movies = [];
+let moviesData = [];
 let currentPage = 1;
-let totalPages = 0;
-const moviesList = document.getElementById("movies-list");
+let sortedByRating = false;
+let sortedByRatingAscending = false;
+let sortedByDate = false;
+let sortedByDateAscending = false;
+let sortedMovies = [];
+let active = "all";
+let favoriteBtns = [];
+let favorites = [];
+if(localStorage.getItem("favorites"))
+favorites = JSON.parse(localStorage.getItem("favorites"));
+else
+localStorage.setItem("favorites", JSON.stringify([]));
+const sortByRatingBtn = document.getElementById("sort-by-rating");
+const sortByDateBtn = document.getElementById("sort-by-date");
+const movies = document.getElementById("movies-list");
+const prevBtn = document.getElementById("prev-button");
+const nextBtn = document.getElementById("next-button");
+const curPageBtn = document.getElementById("page-number-button");
+const favoritesTab = document.querySelector(".favorites-tab");
+const allTab = document.querySelector(".all-tab");
+const searchInput = document.getElementById("search-input");
+const searchBtn = document.getElementById("search-button");
 
-function getMovieNamesFromLocalStorage() {
-  const favouriteMovies = JSON.parse(localStorage.getItem("favouriteMovies"));
-  return favouriteMovies === null ? [] : favouriteMovies;
+async function fetchMovies(page){
+    try{
+        const data = await ( await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=f531333d637d0c44abc85b3e74db2186&language=en-US&page=${page}`) ).json();
+        // console.log(data);
+        moviesData = data.results;
+        // console.log(moviesData);
+        renderMovies(moviesData);
+    }catch(e){
+        console.log(e.message);
+    }
 }
 
-function addMovieNameToLocalStorage(movieName,id) {
-  const favMoviesNames = getMovieNamesFromLocalStorage();
-  localStorage.setItem(
-    "favouriteMovies",
-    JSON.stringify([...favMoviesNames,[movieName,id]])
-  );
-}
-
-function removeMovieNameFromLocalStorage(movieName) {
-  const favMoviesNames = getMovieNamesFromLocalStorage();
-  localStorage.setItem(
-    "favouriteMovies",
-    JSON.stringify(favMoviesNames.filter((movName) => movName !== movieName))
-  );
-}
-
-
-const renderMovies = (movies)=>{
-    moviesList.innerHTML = '';
-    movies.map((movie)=>{
-       const favmovielist = getMovieNamesFromLocalStorage()
-        const {poster_path,title,vote_count,vote_average,id} = movie;
-        let listItem = document.createElement("li");
-        listItem.className = "card";
-        listItem.innerHTML = `
-        <img
-                    class="poster"
-                    src=https://image.tmdb.org/t/p/original/${poster_path}
-                    alt="movie-title"
-                />
-                <p class="title">${title}</p>
-                <section class="vote-favouriteIcon">
-                    <section class="vote">
-                    <p class="vote-count">${vote_count}</p>
-                    <p class="vote-average">${vote_average}</p>
-                    </section>
-                    <i class="fav-icon fa-regular fa-heart fa-2xl ${favmovielist.find((item)=>item[1]==id) ? "fa-solid" : null}" 
-                    data-adfar="${title}" id="ddd"></i>
-                </section>`;
-                moviesList.appendChild(listItem);
-                const faviconbtn = listItem.querySelector(".fav-icon");
-                faviconbtn.addEventListener("click",(event)=>{
-                      let title = event.target.dataset.adfar;
-                      if(faviconbtn.classList.contains("fa-solid")){
-                        removeMovieNameFromLocalStorage(title)
-                        faviconbtn.classList.remove("fa-solid")
-                      } else{
-                        addMovieNameToLocalStorage(title,id);
-                        faviconbtn.classList.add("fa-solid");
-                      }
-
-                })
-
+function renderMovies(moviesData, isFavo){
+    movies.innerHTML = "";
+    moviesData.forEach(({title, id, poster_path, vote_count,vote_average}) =>{
+        // console.log(title,poster_path,vote_average,vote_count);
+        let item = document.createElement("li");
+        item.classList.add("card");
+        if(isFavo){
+            if(favorites.includes(""+id))
+                item.classList.add("favorite-card");
+            else
+                item.style.display = "none";
+        }
+        item.innerHTML =`
+        <img src="https://image.tmdb.org/t/p/original/${poster_path}" alt="" class="poster">
+        <p class="title">${title}</p>
+        <section class="vote-favouriteIcon">
+            <i data-id=${id} class="fa-regular fa-heart fa-2xl favorite-icon"></i>
+            <div class="votes">
+                <p class="vote-count">Votes: ${vote_count}</p>
+                <p class="vote-average">Rating: ${vote_average}</p>
+            </div>
+        </section>
+        `
+        movies.appendChild(item);
+    })
+    renderFavIcons();
+    favoriteBtns.forEach(cur =>{
+        cur.addEventListener("click", ()=>{
+            favorites = JSON.parse(localStorage.getItem("favorites"))
+            const id = cur.dataset.id;
+            if(favorites.includes(id)){
+                cur.style.color = "black"
+                favorites.splice(favorites.indexOf(id),1);
+                cur.parentElement.parentElement.classList.remove("favorite-card")
+                if(active == "favorite")
+                    cur.parentElement.parentElement.style.display = "none"
+            }else{
+                cur.parentElement.parentElement.classList.add("favorite-card")
+                favorites.push(id);
+                cur.style.color = "red"
+            }
+            localStorage.setItem("favorites", JSON.stringify(favorites));
+        })
     })
 }
-
-async function fetchMovies(page) {
-    try {
-        const response = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=f531333d637d0c44abc85b3e74db2186&language=en-US&page=${page}`);
-        const result = await response.json();
-        movies = result.results;
-        renderMovies(movies);
-    } catch (error) {
-        console.log(error);
-    }
-}
-
+function renderFavIcons(){
+    favoriteBtns = document.querySelectorAll(".card i");
+    // let arr = JSON.parse(localStorage.getItem("favorites")) ?? [];
+    // console.log(favoriteBtns);
+    favorites.forEach(id =>{
+        let icon =  document.querySelector(`i[data-id="${id}"]`)
+        if(icon){
+            icon.style.color = "red";
+            icon.parentElement.parentElement.classList.add("favorite-card")
+        }
+    })
+}    
 fetchMovies(currentPage);
 
-let firstSortByDateClick = true;
-const sortByDateButton = document.getElementById("sort-by-date");
-function sortByDate() {
-    let sortedMovies;
-    if (firstSortByDateClick) {
-        sortedMovies = movies.sort(
-            (a, b) => new Date(a.release_date) - new Date(b.release_date)
-        );
-        sortByDateButton.textContent = "Sort by date (latest to oldest)";
-        firstSortByDateClick = false;
-    } else if (!firstSortByDateClick) {
-        sortedMovies = movies.sort(
-            (a, b) => new Date(b.release_date) - new Date(a.release_date)
-        );
-        sortByDateButton.textContent = "Sort by date (oldest to latest)";
-        firstSortByDateClick = true;
+sortByRatingBtn.addEventListener("click", ()=>{
+    if(sortedByRatingAscending){
+        sortedByRatingAscending = false;
+        moviesData.sort((a,b) => b.vote_average - a.vote_average);
+        sortByRatingBtn.innerText = "Sort by rating (least to most)";
+    }else{
+        sortedByRatingAscending = true;
+        moviesData.sort((a,b) => a.vote_average - b.vote_average);
+        sortByRatingBtn.innerText = "Sort by rating (most to least)";
     }
-    renderMovies(sortedMovies);
-}
-
-sortByDateButton.addEventListener("click", sortByDate);
-
-let firstSortByRatingClick = true;
-const sortByRatingButton = document.getElementById("sort-by-rating");
-function sortByRating() {
-    let sortedMovies; 
-    if (firstSortByRatingClick) {
-        sortedMovies = movies.sort((a, b) => a.vote_average - b.vote_average);
-        sortByRatingButton.textContent = "Sort by rating (most to least)";
-        firstSortByRatingClick = false;
-    } else if (!firstSortByRatingClick) {
-        sortedMovies = movies.sort((a, b) => b.vote_average - a.vote_average);
-        sortByRatingButton.textContent = "Sort by rating (least to most)";
-        firstSortByRatingClick = true;
-    }
-    renderMovies(sortedMovies);
-}
-
-sortByRatingButton.addEventListener("click", sortByRating);
-
-let prevButton = document.getElementById("prev-button");
-let pageNumberButton = document.getElementById("page-number-button");
-let nextButton = document.getElementById("next-button");
-prevButton.disabled = true;
-
-prevButton.addEventListener("click",()=>{
-    currentPage--;
-    fetchMovies(currentPage);
-    pageNumberButton.innerText = `current Page: ${currentPage}`;
-    if(currentPage === 1){
-        prevButton.disabled=true;
-        nextButton.disabled=false;
-    } else {
-        prevButton.disabled=false;
-        nextButton.disabled=false;
-    }
+    movies.innerHTML = "";
+    renderMovies(moviesData, active == "favorite");
 })
-nextButton.addEventListener("click",()=>{
+sortByDateBtn.addEventListener("click", ()=>{
+    if(sortedByDateAscending){
+        sortedByDateAscending = false;
+        moviesData.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+        sortByDateBtn.innerText = "Sort by date (oldest to latest)";
+    }else{
+        sortedByDateAscending = true;
+        moviesData.sort((a,b) => new Date(a.release_date) - new Date(b.release_date));
+        sortByDateBtn.innerText = "Sort by date (latest to oldest)";
+    }
+    movies.innerHTML = "";
+    renderMovies(moviesData, active == "favorite");
+})
+
+nextBtn.addEventListener("click", ()=>{
     currentPage++;
     fetchMovies(currentPage);
-    pageNumberButton.innerText = `current Page: ${currentPage}`;
-    if(currentPage === 3){
-        prevButton.disabled=false;
-        nextButton.disabled=true;
-    } else {
-        prevButton.disabled=false;
-        nextButton.disabled=false;
-    }
+    curPageBtn.innerText = `Current Page: ${currentPage}`;
+    prevBtn.disabled = false;
+    if(currentPage == 3)
+        nextBtn.disabled = true;
+    favoritesTab.classList.remove("active-tab");
+    allTab.classList.add("active-tab");
+    active = "all";
+})
+prevBtn.addEventListener("click", ()=>{
+    currentPage--;
+    fetchMovies(currentPage);
+    curPageBtn.innerText = `Current Page: ${currentPage}`;
+    nextBtn.disabled = false;
+    if(currentPage == 1)
+        prevBtn.disabled = true;
+    favoritesTab.classList.remove("active-tab");
+    allTab.classList.add("active-tab");
+    active = "all";
 })
 
-const searchMovies = async (searchedMovie) => {
-  try{
-    const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?query=${searchedMovie}&api_key=f531333d637d0c44abc85b3e74db2186&include_adult=false&language=en-US&page=1`
-    );
-    const result = await response.json();
-    movies = result.results;
-    renderMovies(movies);
-    searchedMovie = true;
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-const searchButton = document.getElementById("search-button");
-const searchInput = document.getElementById("search-input");
-searchButton.addEventListener("click", () => {
-  searchMovies(searchInput.value);
-  pagination.style.display = "none";
-});
-
-const getMovieByName = async (movieName) => {
-  try { 
-    const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?query=${movieName}&api_key=f531333d637d0c44abc85b3e74db2186&include_adult=false&language=en-US&page=1`
-    );
-    const result = await response.json();
-    return result.results[0];
-  } catch (error) {
-    console.log(error);
-  }
-};
-const showFavourites = (favMoviesName) => {
-  const { poster_path, title, vote_count, vote_average } = favMoviesName;
-  let listItem = document.createElement("li");
-  listItem.className = "card";
-  let imgSrc = poster_path
-    ? `https://image.tmdb.org/t/p/original/${poster_path}`
-    : "https://w7.pngwing.com/pngs/116/765/png-transparent-clapperboard-computer-icons-film-movie-poster-angle-text-logo-thumbnail.png";
-  listItem.innerHTML += `
-    <img
-      class="poster"
-      src=${imgSrc}
-      alt="${title}"
-    />
-    <p class="title">${title}</p>
-    <section class="vote-favouriteIcon">
-      <section class="vote">
-        <p class="vote-count">Votes: ${vote_count}</p>
-        <p class="vote-average">Rating: ${vote_average}</p>
-      </section>
-      <i class="favorite-icon fa-solid fa-xmark fa-xl xmark" id="${title}"></i>
-    </section>`;
-  
-  const removeFromWishlistBtn = listItem.querySelector(".xmark");
-  removeFromWishlistBtn.addEventListener("click", (event) => {
-    const { id } = event.target;
-    removeMovieNameFromLocalStorage(id);
-    fetchWishlistMovie();
-  });
-  moviesList.appendChild(listItem);
-};
-
-const fetchWishlistMovie = async () => {
-  moviesList.innerHTML = " ";
-  const movieNamesList = getMovieNamesFromLocalStorage();
-  for (let i = 0; i < movieNamesList.length; i++) {
-    const movieName = movieNamesList[i][0];
-    let movieDataFromName = await getMovieByName(movieName);
-    showFavourites(movieDataFromName);
-  }
-};
-
-const allTab = document.getElementById("all-tab");
-const favoritesTab = document.getElementById("favorites-tab");
-function displayMovies() {
-  if (allTab.classList.contains("active-tab")) {
-    renderMovies(movies);
-   
-  } else if (favoritesTab.classList.contains("active-tab")) {
-    fetchWishlistMovie();
-    pagination.style.display = "none";
-  }
-}
-
-function switchTab(event) {
-  allTab.classList.remove("active-tab");
-  favoritesTab.classList.remove("active-tab");
-
-  event.target.classList.add("active-tab");
-
-  displayMovies();
-}
-
-allTab.addEventListener("click", switchTab);
-favoritesTab.addEventListener("click", switchTab);
-
-const onsearchChange = async (event)=>{
-  let {value} =event.target;
-  if(!value){
-    renderMovies(movies)
-  } else{
-    await searchMovies(value);
-  }
-}
-//class4
-// function debounce(func,delay){
-//   let timer;
-//   return (event)=>{
-//     clearTimeout(timer);
-//     timer =setTimeout(()=>{
-//       func(event);
-//     }, delay)
-//   };
-// }
-function throttle(func,delay){
-  let lastCallTime = 0;
-  return (event)=>{
-    const now = Date.now();
-    if(now -lastCallTime >= delay){
-      func(event);
-      lastCallTime=now;
+favoritesTab.addEventListener("click", ()=>{
+    if(active != "favorite"){
+        favoritesTab.classList.add("active-tab");
+        allTab.classList.remove("active-tab");
+        active = "favorite";
+        document.querySelectorAll(".card").forEach(cur =>{
+            if(!cur.classList.contains("favorite-card"))
+                cur.style.display = "none";
+        })
+        
     }
-  };
-}
-// const debouncesearch = debounce(onsearchChange,1000)
-const throttlsearch = throttle(onsearchChange,1000)
-
-searchInput.addEventListener("input",(event)=>{
-  throttlsearch(event);
 })
+allTab.addEventListener("click", ()=>{
+    if(active != "all"){
+        favoritesTab.classList.remove("active-tab");
+        allTab.classList.add("active-tab");
+        active = "all";
+        document.querySelectorAll(".card").forEach(cur =>{
+            cur.style.display = "unset";
+        })
+    }
+})
+let timer;
+searchInput.addEventListener("input", ()=>{
+    clearTimeout(timer);
+    timer = setTimeout(searchMovie, 1000);
+})
+async function searchMovie(page = 1){
+    let query = searchInput.value;
+    moviesData = (await (await fetch(`https://api.themoviedb.org/3/search/movie?query=${query}&include_adult=false&language=en-US&page=${page}&api_key=f531333d637d0c44abc85b3e74db2186`)).json()).results;
+    renderMovies(moviesData);
+}

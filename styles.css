@@ -12,36 +12,34 @@ header{
     text-align: left;
 }
 header > a{
-   color: white;
-   text-decoration: none;
-   font-size: 35px;
-   font-weight: bold;
+    color: white;
+    text-decoration: none;
+    font-size: 35px;
+    font-weight: bold;
 }
-.search-bar{
+#search-bar{
     display: flex;
     justify-content: center;
     margin: 10px;
 }
-
 #search-input{
     width: 300px;
     height: 30px;
     border: 1px solid #333;
     border-radius: 5px;
     margin-right: 10px;
-    padding: 0 7px;
+    padding: 0px 7px;
 }
 #search-button{
     width: 100px;
-    height: 33px;
+    height: 30px;
     border: none;
     border-radius: 5px;
     background-color: #333;
     color: white;
     cursor: pointer;
 }
-
-.sorting-options{
+#sorting-options{
     display: flex;
     justify-content: center;
     gap: 10px;
@@ -62,8 +60,8 @@ header > a{
     margin-left: 40px;
     gap: 10px;
 }
-#all-tab,
-#favorites-tab{
+.all-tab,
+.favorites-tab{
    width: 100px;
    height: 30px;
    border: none;
@@ -86,6 +84,7 @@ header > a{
   
   /* Style the card element */
   .card {
+    position: relative;
     width: 200px;
     height: 375px;
     margin: 10px;
@@ -107,29 +106,43 @@ header > a{
     text-align: center;
     margin-bottom: 10px;
   }
-  
+  .votes{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
   .vote-favouriteIcon {
     display: flex;
+    flex-direction: column;
     justify-content: space-around;
-  }
-  
-  /* Style the vote count and vote average elements */
-  .vote-count,
-  .vote-average {
+    align-items: center;
+    position: absolute;
+    bottom: 10px;
+    width: 200px;
+}
+
+/* Style the vote count and vote average elements */
+.vote-count,
+.vote-average {
     font-size: 14px;
-  }
-  
-  /* Style the favorite icon element */
-  .favorite-icon {
+}
+
+/* Style the favorite icon element */
+.favorite-icon {
     width: 20px;
     height: 20px;
     cursor: pointer;
     display: flex;
     place-items: center;
     margin-top: 15px;
+    /* position: absolute; */
+    /* top: 200px;
+    right: 20px; */
+    color: black;
   }
   
-  #pagination {
+  .pagination {
     display: flex;
     justify-content: center;
     margin-bottom: 10px;
